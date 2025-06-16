@@ -47,21 +47,18 @@ public class AuthService {
     JWTParser jwtParser;
 
     @Inject
-MasterRoleRepository roleRepository;
-
+    MasterRoleRepository roleRepository;
 
     // @Context
     // RoleMenuRepository roleRepository;
-    
+
     @Context
     RoutingContext routingContext;
-    
-
 
     @Transactional
     public Response register(RegisterRequestDto request) {
         if (userRepository.findByUsernameOrEmail(request.username) != null ||
-            userRepository.find("email", request.email).firstResult() != null) {
+                userRepository.find("email", request.email).firstResult() != null) {
             return ErrorResponse.badRequest("Username or email already exists");
         }
 
@@ -89,8 +86,6 @@ MasterRoleRepository roleRepository;
         return SuccessResponse.ok("Registration successful");
     }
 
-
-
     @Transactional
     public Response login(LoginRequestDto request) {
         MasterUser user = userRepository.findByUsernameOrEmail(request.username);
@@ -101,8 +96,8 @@ MasterRoleRepository roleRepository;
         if (!request.password.equals(user.password)) {
             return ErrorResponse.unauthorized("Invalid credentials");
         }
-        
-String ipAddress = routingContext.request().remoteAddress().host();
+
+        String ipAddress = routingContext.request().remoteAddress().host();
         String userAgent = routingContext.request().getHeader("User-Agent");
 
         String token = Jwt.issuer("your-app")

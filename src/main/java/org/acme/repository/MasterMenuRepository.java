@@ -6,11 +6,13 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.acme.entity.MasterMenu;
 
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class MasterMenuRepository {
+public class MasterMenuRepository implements PanacheRepository<MasterMenu> {
 
     @Inject
     EntityManager em;

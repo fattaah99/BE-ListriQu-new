@@ -8,15 +8,13 @@ public class SuccessResponse {
     public static Response ok(String message) {
         return Response.ok(Map.of(
                 "status", "success",
-                "message", message
-        )).build();
+                "message", message)).build();
     }
 
     public static Response ok(String message, Object data) {
         return Response.ok(Map.of(
                 "status", "success",
                 "message", message,
-                "data", data
-        )).build();
+                "data", data)).build();
     }
 }
