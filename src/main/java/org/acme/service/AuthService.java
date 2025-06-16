@@ -5,20 +5,31 @@ import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.JsonNumber;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.LoginRequestDto;
-import org.acme.dto.LoginResponseDto;
-import org.acme.dto.LoginResponseDto.Data;
+import org.acme.dto.RegisterRequestDto;
 import org.acme.entity.MasterMenu;
+import org.acme.entity.MasterRole;
 import org.acme.entity.MasterUser;
 import org.acme.entity.UserSession;
 import org.acme.repository.MasterMenuRepository;
+import org.acme.repository.MasterRoleRepository;
 import org.acme.repository.MasterUserRepository;
 import org.acme.repository.UserSessionRepository;
+import org.acme.response.LoginResponseDto;
+import org.acme.response.LoginResponseDto.Data;
+import org.acme.util.ErrorResponse;
+import io.vertx.ext.web.RoutingContext;
+import jakarta.ws.rs.core.Context;
+import org.acme.util.SuccessResponse;
+import org.mindrot.jbcrypt.BCrypt;
+import org.acme.repository.RoleMenuRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class AuthService {
@@ -35,22 +46,70 @@ public class AuthService {
     @Inject
     JWTParser jwtParser;
 
+    @Inject
+MasterRoleRepository roleRepository;
+
+
+    // @Context
+    // RoleMenuRepository roleRepository;
+    
+    @Context
+    RoutingContext routingContext;
+    
+
+
+    @Transactional
+    public Response register(RegisterRequestDto request) {
+        if (userRepository.findByUsernameOrEmail(request.username) != null ||
+            userRepository.find("email", request.email).firstResult() != null) {
+            return ErrorResponse.badRequest("Username or email already exists");
+        }
+
+        MasterRole role = roleRepository.findById(request.role_id.longValue());
+        if (role == null) {
+            return ErrorResponse.badRequest("Invalid role_id");
+        }
+
+        MasterUser user = new MasterUser();
+        user.username = request.username;
+        user.email = request.email;
+        user.password = BCrypt.hashpw(request.password, BCrypt.gensalt());
+        user.full_name = request.full_name;
+        user.phone = request.phone;
+        user.unit_id = request.unit_id;
+        user.role = role;
+        user.status = MasterUser.Status.Active;
+        user.created_at = LocalDateTime.now();
+        user.updated_at = LocalDateTime.now();
+        user.created_by = request.created_by;
+        user.updated_by = request.created_by;
+
+        userRepository.persist(user);
+
+        return SuccessResponse.ok("Registration successful");
+    }
+
+
+
     @Transactional
     public Response login(LoginRequestDto request) {
         MasterUser user = userRepository.findByUsernameOrEmail(request.username);
         if (user == null || !user.status.equals(MasterUser.Status.Active)) {
-            return unauthorized();
+            return ErrorResponse.unauthorized("Invalid credentials");
         }
 
         if (!request.password.equals(user.password)) {
-            return unauthorized();
+            return ErrorResponse.unauthorized("Invalid credentials");
         }
+        
+String ipAddress = routingContext.request().remoteAddress().host();
+        String userAgent = routingContext.request().getHeader("User-Agent");
 
         String token = Jwt.issuer("your-app")
                 .upn(user.username)
                 .claim("user_id", user.user_id)
                 .claim("role_id", user.role.role_id)
-                .claim("groups", List.of(user.role.role_code))  // <= penting untuk @RolesAllowed
+                .claim("groups", List.of(user.role.role_code))
                 .expiresIn(24 * 60 * 60)
                 .sign();
 
@@ -59,10 +118,12 @@ public class AuthService {
         session.session_token = token;
         session.login_at = LocalDateTime.now();
         session.status = UserSession.Status.Active;
+        session.ip_address = ipAddress;
+        session.user_agent = userAgent;
         sessionRepository.persist(session);
 
         List<MasterMenu> menus = menuRepository.findByRoleId(user.role.role_id);
-        List<java.util.Map<String, Object>> menuTree = menuRepository.buildMenuTree(menus);
+        List<Map<String, Object>> menuTree = menuRepository.buildMenuTree(menus);
 
         Data data = new Data();
         data.user_id = user.user_id;
@@ -83,18 +144,18 @@ public class AuthService {
     @Transactional
     public Response logout(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(java.util.Map.of("status", "error", "message", "Missing token"))
-                    .build();
+            return ErrorResponse.unauthorized("Missing token");
         }
 
         String token = authHeader.substring("Bearer ".length());
 
         try {
             var jwt = jwtParser.parse(token);
-            Integer userId = jwt.getClaim("user_id");
+            JsonNumber jsonNumber = jwt.getClaim("user_id");
+            Integer userId = jsonNumber.intValue();
 
-            UserSession session = sessionRepository.find("user.user_id = ?1 AND session_token = ?2 AND status = 'Active'",
+            UserSession session = sessionRepository.find(
+                    "user.user_id = ?1 AND session_token = ?2 AND status = 'Active'",
                     userId, token).firstResult();
 
             if (session != null) {
@@ -102,18 +163,10 @@ public class AuthService {
                 session.logout_at = LocalDateTime.now();
             }
 
-            return Response.ok(java.util.Map.of("status", "success", "message", "Logout successful")).build();
+            return Response.ok(Map.of("status", "success", "message", "Logout successful")).build();
 
         } catch (ParseException e) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(java.util.Map.of("status", "error", "message", "Invalid token"))
-                    .build();
+            return ErrorResponse.unauthorized("Invalid token");
         }
     }
-
-    private Response unauthorized() {
-        return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(java.util.Map.of("status", "error", "message", "Invalid credentials"))
-                .build();
-    }
-} 
+}
