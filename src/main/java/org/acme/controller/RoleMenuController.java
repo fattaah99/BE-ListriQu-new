@@ -1,5 +1,6 @@
 package org.acme.controller;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -18,12 +19,14 @@ public class RoleMenuController {
     RoleMenuService roleMenuService;
 
     @GET
+    @RolesAllowed("SUPERADMIN")
     @Path("/role/{role_id}/menu")
     public Response getMenusByRole(@PathParam("role_id") Long roleId) {
         return roleMenuService.getMenusByRole(roleId);
     }
 
     @POST
+    @RolesAllowed("SUPERADMIN")
     @Path("/role-menu")
    
     public Response assignMenusToRole(AssignRoleMenuRequestDto request) {

@@ -93,7 +93,7 @@ public class AuthService {
             return ErrorResponse.unauthorized("Invalid credentials");
         }
 
-        if (!request.password.equals(user.password)) {
+        if (!BCrypt.checkpw(request.password, user.password)) {
             return ErrorResponse.unauthorized("Invalid credentials");
         }
 

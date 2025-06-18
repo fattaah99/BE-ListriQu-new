@@ -41,6 +41,12 @@ public class ErrorResponse {
                 ))
                 .build();
     }
+    public static Response notFound(String message) {
+    return Response.status(Response.Status.NOT_FOUND)
+        .entity(Map.of("status", "error", "message", message))
+        .build();
+}
+
 
    
     

@@ -1,5 +1,6 @@
 package org.acme.controller;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -16,6 +17,7 @@ public class MenuController {
     @Inject
     MenuService menuService;
 
+    @RolesAllowed("SUPERADMIN")
     @POST
     // @SecurityRequirement(name = "bearerAuth")
     public Response createMenu(CreateMenuRequestDto request) {

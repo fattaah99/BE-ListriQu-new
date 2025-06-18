@@ -43,7 +43,7 @@ public class AuthController {
     }
 
     @POST
-    @RolesAllowed("SUPERADMIN")
+    // @RolesAllowed("SUPERADMIN")
     @Path("/logout")
     public Response logout(@HeaderParam("Authorization") String authHeader) {
         return authService.logout(authHeader);
