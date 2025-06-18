@@ -8,8 +8,10 @@ import java.time.LocalDateTime;
 public class MasterUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // atau AUTO jika pakai sequence
+    @Column(name = "user_id")
     public Integer user_id;
+
 
     @Column(nullable = false, unique = true)
     public String username;
@@ -28,8 +30,10 @@ public class MasterUser {
     @JoinColumn(name = "role_id")
     public MasterRole role;
 
-    @Enumerated(EnumType.STRING)
-    public Status status = Status.Active;
+@Enumerated(EnumType.STRING)
+@Column(columnDefinition = "master_status") // 👈 penting!
+public Status status = Status.Active;
+
 
     public LocalDateTime created_at;
     public LocalDateTime updated_at;

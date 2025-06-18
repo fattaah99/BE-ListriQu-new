@@ -1,4 +1,4 @@
-package org.acme.dto;
+package org.acme.response;
 
 import java.util.List;
 import java.util.Map;

@@ -8,8 +8,10 @@ import java.time.LocalDateTime;
 public class MasterMenu {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // gunakan SERIAL / AUTO_INCREMENT
+    @Column(name = "menu_id")
     public Integer menu_id;
+
 
     @ManyToOne
     @JoinColumn(name = "parent_id")

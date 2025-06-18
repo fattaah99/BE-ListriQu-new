@@ -9,6 +9,7 @@ public class RoleMenu {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "role_menu_id")
     public Integer role_menu_id;
 
     @ManyToOne
